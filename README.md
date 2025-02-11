@@ -6,8 +6,4 @@ Automated data validation
 Integration with AWS services
 Scheduled execution
 Technologies Used: Python, AWS Lambda, AWS CloudFormation, AWS Step Functions (optional), AWS S3
-Installation:
-Instructions on how to set up the AWS environment using CloudFormation.
-Instructions on how to install the necessary Python libraries.
-Usage:
-Example code snippets showing how to trigger the validation process.
+
