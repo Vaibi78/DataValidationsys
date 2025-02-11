@@ -1,0 +1,77 @@
+Resources:
+  DataValidationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: DataValidationLambda
+      Handler: data_validation.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: # replace to point to the correct file path
+          <INSERT_LAMBDA_ZIP_FILE_CONTENTS_HERE>
+      Runtime: python3.9
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+          Variables:
+            OUTPUT_BUCKET: !Ref OutputBucket #Pass the out bucket here
+  S3BucketTrigger:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt DataValidationLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !GetAtt InputBucket.Arn
+  InputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: <YOUR_INPUT_BUCKET_NAME>
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt DataValidationLambda.Arn
+  OutputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: <YOUR_OUTPUT_BUCKET_NAME>
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: DataValidationLambdaRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 'arn:aws:logs:*:*:*'
+              - Effect: Allow #Need to get and put objects from S3 buckets
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Join
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref InputBucket
+                    - /*
+              - Effect: Allow #Permission for Output bucket also
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Join
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref OutputBucket
+                    - /*
